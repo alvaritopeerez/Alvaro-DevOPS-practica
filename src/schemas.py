@@ -58,13 +58,6 @@ class PedidoCreate(BaseModel):
     cliente_id: int
     items: List[PedidoItemCreate]
 
-class PedidoItemRead(BaseModel):
-    """Esquema para devolver cada línea de un pedido"""
-    producto_id: int
-    nombre_producto: str
-    cantidad: int
-    precio_unitario: float
-    subtotal: float
 
 class PedidoRead(BaseModel):
     """Esquema para devolver un pedido completo"""

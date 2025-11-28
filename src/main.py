@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import List, Optional
-from uuid import UUID
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, EmailStr
@@ -11,66 +10,15 @@ from .Services.Tienda_service import TiendaService
 from .models.Usuario import Usuario, Cliente, Administrador
 from .models.Producto import Producto, ProductoElectronico, ProductoRopa
 from .models.Pedido import Pedido, ItemPedido
+from .schemas import (
+    UsuarioCreate, UsuarioRead,
+    ProductoCreate, ProductoRead,
+    PedidoItemCreate, PedidoCreate, PedidoItemRead, PedidoRead
+)
 
 app = FastAPI(title="Tienda Online API")
 
 tienda_service = TiendaService()
-
-# ---------------------- SCHEMAS ---------------------- #
-
-class UsuarioCreate(BaseModel):
-    nombre: str
-    correo: EmailStr
-    tipo: str  # "cliente" o "administrador"
-    direccion: Optional[str] = None
-
-class UsuarioRead(BaseModel):
-    id: str
-    nombre: str
-    correo: EmailStr
-    es_admin: bool
-
-class ProductoCreate(BaseModel):
-    tipo: str  # "generico", "electronico" o "ropa"
-    nombre: str
-    precio: float
-    stock: int
-    garantia_meses: Optional[int] = None
-    talla: Optional[str] = None
-    color: Optional[str] = None
-
-class ProductoRead(BaseModel):
-    id: str
-    tipo: str
-    nombre: str
-    precio: float
-    stock: int
-    garantia_meses: Optional[int] = None
-    talla: Optional[str] = None
-    color: Optional[str] = None
-
-class ItemPedidoRead(BaseModel):
-    producto_id: str
-    nombre: str
-    cantidad: int
-    precio_unitario: float
-    subtotal: float
-
-class PedidoItemCreate(BaseModel):
-    producto_id: str
-    cantidad: int
-
-class PedidoCreate(BaseModel):
-    cliente_id: str
-    items: List[PedidoItemCreate]
-
-class PedidoRead(BaseModel):
-    id: str
-    fecha: str
-    cliente_id: str
-    cliente_nombre: str
-    items: List[ItemPedidoRead]
-    total: float
 
 # ---------------------- ENDPOINTS ---------------------- #
 
@@ -221,7 +169,7 @@ def crear_pedido(datos: PedidoCreate) -> PedidoRead:
         raise HTTPException(status_code=400, detail=str(exc))
 
     items_read = [
-        ItemPedidoRead(
+        PedidoItemRead(
             producto_id=i.producto_id,
             nombre=i.nombre,
             cantidad=i.cantidad,
@@ -256,7 +204,7 @@ def listar_pedidos_cliente(cliente_id: str) -> list[PedidoRead]:
             cliente_id=p.cliente_id,
             cliente_nombre=p.cliente_nombre,
             items=[
-                ItemPedidoRead(
+                PedidoItemRead(
                     producto_id=i.producto_id,
                     nombre=i.nombre,
                     cantidad=i.cantidad,
