@@ -1,75 +1,222 @@
-from models.Producto import ProductoElectronico, ProductoRopa
-from models.Usuario import Cliente, Administrador
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from typing import List
+
+# Importar schemas
+from schemas import (
+    UsuarioCreate, UsuarioRead,
+    ProductoCreate, ProductoRead,
+    PedidoCreate, PedidoRead
+)
+
+# Importar la lógica de negocio
 from Services.Tienda_service import TiendaService
 
+# Inicializar FastAPI
+app = FastAPI(
+    title="Tienda Online API",
+    description="API REST para gestionar una tienda online",
+    version="1.0.0"
+)
 
-def imprimir_inventario(tienda):
-    print("\n INVENTARIO ")
-    for p in tienda.listar_productos():
-        print(p)
+# Permitir CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# Instancia del servicio
+tienda = TiendaService()
 
-def imprimir_pedidos_cliente(tienda, cliente_id):
-    print("\n PEDIDOS DEL CLIENTE ")
-    pedidos = tienda.listar_pedidos_usuario(cliente_id)
-    if not pedidos:
-        print("(Aún no se han realizado pedidos)")
-    else:
-        for p in pedidos:
-            print(p)
-            print("-------------------------------------------------------------")
+# ═══════════════════════════════════════════════════════════════
+# ENDPOINTS DE USUARIOS
+# ═══════════════════════════════════════════════════════════════
 
+@app.post("/usuarios", response_model=UsuarioRead, status_code=201)
+def crear_usuario(usuario: UsuarioCreate):
+    """Crear un nuevo usuario"""
+    try:
+        nuevo_usuario = tienda.crear_usuario(
+            nombre=usuario.nombre,
+            email=usuario.email,
+            tipo=usuario.tipo,
+            direccion_postal=usuario.direccion_postal
+        )
+        return {
+            "id": nuevo_usuario.id,
+            "nombre": nuevo_usuario.nombre,
+            "email": nuevo_usuario.email,
+            "es_admin": nuevo_usuario.es_admin
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-def imprimir_usuarios(tienda):
-    print("\n USUARIOS REGISTRADOS ")
-    for usuario in tienda.listar_usuarios():
-        print(usuario)
+@app.get("/usuarios/{usuario_id}", response_model=UsuarioRead)
+def obtener_usuario(usuario_id: int):
+    """Obtener un usuario específico"""
+    try:
+        usuario = tienda.obtener_usuario(usuario_id)
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return {
+            "id": usuario.id,
+            "nombre": usuario.nombre,
+            "email": usuario.email,
+            "es_admin": usuario.es_admin
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
+@app.get("/usuarios", response_model=List[UsuarioRead])
+def listar_usuarios():
+    """Listar todos los usuarios"""
+    try:
+        usuarios = tienda.listar_usuarios()
+        return [
+            {
+                "id": u.id,
+                "nombre": u.nombre,
+                "email": u.email,
+                "es_admin": u.es_admin
+            }
+            for u in usuarios
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-def main():
-    tienda = TiendaService()
+# ═══════════════════════════════════════════════════════════════
+# ENDPOINTS DE PRODUCTOS
+# ═══════════════════════════════════════════════════════════════
 
-    # Usuarios
-    c1 = tienda.registrar_usuario   ("cliente", "Alvaro Pérez", "alvaro@gmail.com", direccion="UIE, A Coruña")
-    c2 = tienda.registrar_usuario   ("cliente", "Lara Otero", "lara@hotmail.com", direccion="Avenida USC, Santiago")
-    c3 = tienda.registrar_usuario   ("cliente", "Pepinho", "pepinho@yahoo.com", direccion="Barrio Salamanca, Madrid")
+@app.post("/productos", response_model=ProductoRead, status_code=201)
+def crear_producto(producto: ProductoCreate):
+    """Crear un nuevo producto"""
+    try:
+        nuevo_producto = tienda.crear_producto(
+            tipo=producto.tipo,
+            nombre=producto.nombre,
+            precio=producto.precio,
+            stock=producto.stock,
+            meses_garantia=producto.meses_garantia,
+            talla=producto.talla,
+            color=producto.color
+        )
+        return {
+            "id": nuevo_producto.id,
+            "tipo": nuevo_producto.tipo,
+            "nombre": nuevo_producto.nombre,
+            "precio": nuevo_producto.precio,
+            "stock": nuevo_producto.stock,
+            "meses_garantia": getattr(nuevo_producto, 'meses_garantia', None),
+            "talla": getattr(nuevo_producto, 'talla', None),
+            "color": getattr(nuevo_producto, 'color', None)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    admin = tienda.registrar_usuario("administrador", "El_admin", "admin@tienda.com")
+@app.get("/productos", response_model=List[ProductoRead])
+def listar_productos():
+    """Listar todos los productos"""
+    try:
+        productos = tienda.listar_productos()
+        return [
+            {
+                "id": p.id,
+                "tipo": p.tipo,
+                "nombre": p.nombre,
+                "precio": p.precio,
+                "stock": p.stock,
+                "meses_garantia": getattr(p, 'meses_garantia', None),
+                "talla": getattr(p, 'talla', None),
+                "color": getattr(p, 'color', None)
+            }
+            for p in productos
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    imprimir_usuarios(tienda)
+@app.get("/productos/{producto_id}", response_model=ProductoRead)
+def obtener_producto(producto_id: int):
+    """Obtener un producto específico"""
+    try:
+        producto = tienda.obtener_producto(producto_id)
+        if not producto:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+        return {
+            "id": producto.id,
+            "tipo": producto.tipo,
+            "nombre": producto.nombre,
+            "precio": producto.precio,
+            "stock": producto.stock,
+            "meses_garantia": getattr(producto, 'meses_garantia', None),
+            "talla": getattr(producto, 'talla', None),
+            "color": getattr(producto, 'color', None)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    # Productos
-    p1 = tienda.añadir_producto(ProductoElectronico("PlayStation 5", 399.99, 35, 24))
-    p2 = tienda.añadir_producto(ProductoElectronico("Ratón Logitech", 79.90, 45, 12))
-    p3 = tienda.añadir_producto(ProductoRopa("Camiseta AMI", 94.95, 100, "S", "Blanca"))
-    p4 = tienda.añadir_producto(ProductoRopa("Chaleco Scalpers", 59.90, 40, "M", "Gris"))
-    p5 = tienda.añadir_producto(ProductoElectronico("Alfombrilla de ratón", 30.50, 35, 6))
+@app.delete("/productos/{producto_id}", status_code=204)
+def eliminar_producto(producto_id: int):
+    """Eliminar un producto"""
+    try:
+        tienda.eliminar_producto(producto_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    imprimir_inventario(tienda)
+# ═══════════════════════════════════════════════════════════════
+# ENDPOINTS DE PEDIDOS
+# ═══════════════════════════════════════════════════════════════
 
-    # Pedidos
-    pedido1 = tienda.realizar_pedido(c3.id, [(p1.id, 2), (p3.id, 3)])
-    print("\n PEDIDO 1 ")
-    print(pedido1)
+@app.post("/pedidos", response_model=PedidoRead, status_code=201)
+def crear_pedido(pedido: PedidoCreate):
+    """Crear un nuevo pedido"""
+    try:
+        nuevo_pedido = tienda.crear_pedido(
+            cliente_id=pedido.cliente_id,
+            items=[(item.producto_id, item.cantidad) for item in pedido.items]
+        )
+        return {
+            "id": nuevo_pedido.id,
+            "fecha": str(nuevo_pedido.fecha),
+            "cliente_id": nuevo_pedido.cliente.id,
+            "cliente_nombre": nuevo_pedido.cliente.nombre,
+            "items": [],
+            "total": nuevo_pedido.calcular_total()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    pedido2 = tienda.realizar_pedido(c1.id, [(p2.id, 1), (p4.id, 2), (p5.id, 1)])
-    print("\n PEDIDO 2 ")
-    print(pedido2)
+@app.get("/usuarios/{cliente_id}/pedidos", response_model=List[PedidoRead])
+def listar_pedidos_cliente(cliente_id: int):
+    """Listar todos los pedidos de un cliente"""
+    try:
+        pedidos = tienda.obtener_pedidos_cliente(cliente_id)
+        return [
+            {
+                "id": p.id,
+                "fecha": str(p.fecha),
+                "cliente_id": p.cliente.id,
+                "cliente_nombre": p.cliente.nombre,
+                "items": [],
+                "total": p.calcular_total()
+            }
+            for p in pedidos
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    pedido3 = tienda.realizar_pedido(c2.id, [(p3.id, 1), (p4.id, 1), (p1.id, 1)])
-    print("\n PEDIDO 3 ")
-    print(pedido3)
+# ═══════════════════════════════════════════════════════════════
+# HEALTH CHECK
+# ═══════════════════════════════════════════════════════════════
 
-    pedido4 = tienda.realizar_pedido(c1.id, [(p4.id, 1), (p3.id, 2), (p5.id, 1), (p2.id, 1)])
-    print("\n PEDIDO 4 ")
-    print(pedido4)
-
-    # Inventario después de los pedidos
-    imprimir_inventario(tienda)
-
-    # Historial de un cliente
-    imprimir_pedidos_cliente(tienda, c1.id)
-
+@app.get("/")
+def root():
+    """Health check endpoint"""
+    return {"mensaje": "Tienda Online API funcionando correctamente"}
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
