@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 
 # ═══════════════════════════════════════════════════════════════
@@ -8,15 +8,14 @@ from typing import List, Optional
 class UsuarioCreate(BaseModel):
     """Esquema para crear un usuario"""
     nombre: str
-    email: str
+    correo: EmailStr
     tipo: str  # "cliente" o "administrador"
-    direccion_postal: str
+    direccion: Optional[str] = None
 
 class UsuarioRead(BaseModel):
-    """Esquema para devolver un usuario"""
-    id: int
+    id: str
     nombre: str
-    email: str
+    correo: EmailStr
     es_admin: bool
 
 # ═══════════════════════════════════════════════════════════════
@@ -29,18 +28,17 @@ class ProductoCreate(BaseModel):
     nombre: str
     precio: float
     stock: int
-    meses_garantia: Optional[int] = None  # Para electrónicos
-    talla: Optional[str] = None  # Para ropa
-    color: Optional[str] = None  # Para ropa
+    garantia_meses: Optional[int] = None
+    talla: Optional[str] = None
+    color: Optional[str] = None
 
 class ProductoRead(BaseModel):
-    """Esquema para devolver un producto"""
-    id: int
+    id: str
     tipo: str
     nombre: str
     precio: float
     stock: int
-    meses_garantia: Optional[int] = None
+    garantia_meses: Optional[int] = None
     talla: Optional[str] = None
     color: Optional[str] = None
 
@@ -48,22 +46,25 @@ class ProductoRead(BaseModel):
 # ESQUEMAS DE PEDIDO
 # ═══════════════════════════════════════════════════════════════
 
+class PedidoItemRead(BaseModel):
+    producto_id: str
+    nombre: str
+    cantidad: int
+    precio_unitario: float
+    subtotal: float
+
 class PedidoItemCreate(BaseModel):
-    """Esquema para cada producto en un pedido"""
-    producto_id: int
+    producto_id: str
     cantidad: int
 
 class PedidoCreate(BaseModel):
-    """Esquema para crear un pedido"""
-    cliente_id: int
+    cliente_id: str
     items: List[PedidoItemCreate]
 
-
 class PedidoRead(BaseModel):
-    """Esquema para devolver un pedido completo"""
-    id: int
+    id: str
     fecha: str
-    cliente_id: int
+    cliente_id: str
     cliente_nombre: str
     items: List[PedidoItemRead]
     total: float
