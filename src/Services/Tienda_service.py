@@ -1,7 +1,7 @@
 from typing import List, Tuple, Dict
-from models.Producto import Producto
-from models.Usuario import Usuario, Cliente, Administrador
-from models.Pedido import Pedido, ItemPedido
+from ..models.Producto import Producto
+from ..models.Usuario import Usuario, Cliente, Administrador
+from ..models.Pedido import Pedido, ItemPedido
 
 class TiendaService:
     """Servicio que gestiona usuarios, productos y pedidos de la tienda."""
